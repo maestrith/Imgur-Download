@@ -792,7 +792,7 @@ Check_For_Update(startup:=""){
 		}else
 			return
 	}
-	Version:="0.000.1"
+	Version:="0.000.2"
 	;newwin:=new GUIKeep("CFU"),newwin.add("Edit,w400 h400 ReadOnly,No New Updates,wh","Button,gautoupdate,Update,y","Button,x+5 gcurrentinfo,Current Changelog,y","Button,x+5 gextrainfo,Changelog History,y"),newwin.show("AHK Studio Version: " version)
 	Gui,2:Destroy
 	Gui,2:+hwndhwnd
