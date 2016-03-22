@@ -307,6 +307,7 @@ Gui(x:=0){
 	Gui,Add,Checkbox,xm y523 gBrowse vbrowse,&Browse Mode
 	Gui,Add,Checkbox,x+M gUseXBox vUseXBox,Use &XBox Controller
 	Gui,Add,Text,xm y540,Browse mode will allow you to browse images beyond the Most Recent Image date
+	Gui,Add,Button,xm y560 gCheck_For_Update,Check For &Update
 	GuiControl,1:,browse,% Round(v.browse:=settings.ssn("//browse").text)
 	GuiControl,1:,UseXBox,% Round(settings.ssn("//xbox").text)
 	con:=v.xml.add("controls")
@@ -750,4 +751,69 @@ Next_Page(){
 }
 Next(){
 	cxml.Next()
+}
+
+URLDownloadToVar(url){
+	http:=ComObjCreate("WinHttp.WinHttpRequest.5.1")
+	if(proxy:=settings.ssn("//proxy").text)
+		http.setProxy(2,proxy)
+	http.Open("GET",url,1),http.Send(),http.WaitForResponse ;the 1 is async
+	return http.ResponseText
+}
+Check_For_Update(startup:=""){
+	static newwin,version,DownloadURL:="https://raw.githubusercontent.com/maestrith/Imgur-Download/master/Imgur-Download.ahk",VersionTextURL:="https://raw.githubusercontent.com/maestrith/Imgur-Download/master/Imgur-Download.text"
+	Run,RunDll32.exe InetCpl.cpl,ClearMyTracksByProcess 8
+	auto:=settings.ea("//autoupdate"),sub:=A_NowUTC
+	if(startup=1){
+		if(v.options.Check_For_Update_On_Startup!=1)
+			return
+		if(auto.reset>A_Now)
+			return
+	}
+	sub-=A_Now,hh
+	FileGetTime,time,%A_ScriptFullPath%
+	time+=sub,hh
+	;ea:=settings.ea("//github")
+	;token:=ea.token?"?access_token=" ea.token:""
+	url:="https://api.github.com/repos/maestrith/Imgur-Download/commits/master" token
+	http:=ComObjCreate("WinHttp.WinHttpRequest.5.1")
+	http.Open("GET",url)
+	if(proxy:=settings.ssn("//proxy").text)
+		http.setProxy(2,proxy)
+	http.send(),RegExMatch(flan:=http.ResponseText,"iUO)\x22date\x22:\x22(.*)\x22",found),date:=RegExReplace(found.1,"\D")
+	if(startup="1"){
+		if(reset:=http.getresponseheader("X-RateLimit-Reset")){
+			seventy:=19700101000000
+			for a,b in {s:reset,h:-sub}
+				EnvAdd,seventy,%b%,%a%
+			settings.add("autoupdate",{reset:seventy})
+			if(time>date)
+				return
+		}else
+			return
+	}
+	Version:="0.000.1"
+	;newwin:=new GUIKeep("CFU"),newwin.add("Edit,w400 h400 ReadOnly,No New Updates,wh","Button,gautoupdate,Update,y","Button,x+5 gcurrentinfo,Current Changelog,y","Button,x+5 gextrainfo,Changelog History,y"),newwin.show("AHK Studio Version: " version)
+	Gui,2:Destroy
+	Gui,2:+hwndhwnd
+	Gui,2:Add,Edit,w500 h400,This may be blank...if so just try the update.
+	Gui,2:Add,Button,gUpdateProgram,Update
+	Gui,2:Show,,Imgur Download
+	if(time<date){
+		file:=FileOpen("changelog.txt","rw"),file.seek(0),file.write(update:=RegExReplace(UrlDownloadToVar(VersionTextURL),"\R","`r`n")),file.length(file.position),file.Close()
+		ControlSetText,Edit1,%update%,ahk_id%hwnd%
+	}if(!found.1)
+		ControlSetText,Edit1,% http.ResponseText,ahk_id%hwnd%
+	else
+		ControlSetText,Edit1,% found.1 "`r`n`r`n" http.ResponseText,ahk_id%hwnd%
+	return
+	UpdateProgram:
+	SplitPath,A_ScriptFullPath,,dir,,nne
+	if(dir="D:\AHK\Duplicate Programs\Imgur Download")
+		return m("just....no.....")
+	FileMove,%A_ScriptFullPath%,%dir%\%nne%%A_Now%.ahk
+	UrlDownloadToFile,%DownloadURL%,%A_ScriptFullPath%
+	Run,%A_ScriptFullPath%
+	ExitApp
+	return
 }
