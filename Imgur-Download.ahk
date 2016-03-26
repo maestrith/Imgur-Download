@@ -532,7 +532,7 @@ PopulateSubReddits(){
 	while,aa:=all.item[A_Index-1],ea:=xml.ea(aa){
 		LV_Add("",aa.NodeName,Epoch(ea.time,1).date,ea.customcount,ea.page)
 	}
-	all:=settings.sn("//date/*[@autoselect]")
+	all:=settings.sn("//date/*[@autoselect='1']")
 	while(aa:=all.item[A_Index-1]),ea:=xml.ea(aa)
 		LV_Modify(sn(aa,"preceding-sibling::*").length+1,"Check")
 	Loop,3
@@ -804,8 +804,10 @@ Check_For_Update(startup:=""){
 		ControlSetText,Edit1,%update%,ahk_id%hwnd%
 	}if(!found.1)
 		ControlSetText,Edit1,% http.ResponseText,ahk_id%hwnd%
-	else
+	else{
+		Sleep,2000
 		ControlSetText,Edit1,% found.1 "`r`n`r`n" http.ResponseText,ahk_id%hwnd%
+	}
 	return
 	UpdateProgram:
 	SplitPath,A_ScriptFullPath,,dir,,nne
