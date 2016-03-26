@@ -573,7 +573,7 @@ AddSubReddit(){
 	if(RegExMatch(new,"\/|\\"))
 		return m("Please read the instructions and try again")
 	if(!settings.ssn("//" new))
-		settings.under(settings.add("date"),new,{time:0,autoselect:0}),PopulateSubReddits()
+		settings.under(settings.add("date"),new,{time:0}),PopulateSubReddits()
 }
 Browse(){
 	browse:=settings.ssn("//browse").text?0:1
