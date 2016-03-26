@@ -2,6 +2,15 @@
 global settings,txml,img,count,wb,cxml:=new CurrentXML(),v:=[]
 v.count:=9
 settings:=new XML("settings")
+list:=settings.sn("//date/*"),top:=settings.ssn("//date")
+while(ll:=list.item[A_Index-1]),ea:=xml.ea(ll){
+	if(ll.nodename!="sub")
+		new:=settings.under(top,"sub",ea),new.SetAttribute("name",ll.NodeName)
+}
+while(ll:=list.item[A_Index-1]){
+	if(ll.nodename!="sub")
+		ll.ParentNode.RemoveChild(ll)
+}
 img:=new Imgur()
 if(img.registered)
 	return
@@ -515,7 +524,7 @@ WinPos(){
 SubReddit(SetCal:=0){
 	if(!LV_GetNext())
 		return
-	Default("SysListView321"),LV_GetText(sub,LV_GetNext()),node:=settings.ssn("//" sub),ea:=settings.ea(node)
+	Default("SysListView321"),LV_GetText(sub,LV_GetNext()),node:=settings.ssn("//sub[@name='" sub "']"),ea:=settings.ea(node)
 	err:=ErrorLevel
 	if(err~="C"&&A_GuiEvent="i"&&!ea.autoselect)
 		node.SetAttribute("autoselect",1),cxml.autoselect:=1
@@ -528,10 +537,9 @@ SubReddit(SetCal:=0){
 PopulateSubReddits(){
 	GuiControl,1:+g,SysListView321
 	GuiControl,1:-Redraw,SysListView321
-	all:=settings.sn("//date/*"),Default("SysListView321"),LV_Delete()
-	while,aa:=all.item[A_Index-1],ea:=xml.ea(aa){
-		LV_Add("",aa.NodeName,Epoch(ea.time,1).date,ea.customcount,ea.page)
-	}
+	all:=settings.sn("//date/sub"),Default("SysListView321"),LV_Delete()
+	while,aa:=all.item[A_Index-1],ea:=xml.ea(aa)
+		LV_Add("",ea.name,Epoch(ea.time,1).date,ea.customcount,ea.page)
 	all:=settings.sn("//date/*[@autoselect='1']")
 	while(aa:=all.item[A_Index-1]),ea:=xml.ea(aa)
 		LV_Modify(sn(aa,"preceding-sibling::*").length+1,"Check")
@@ -543,14 +551,14 @@ PopulateSubReddits(){
 	GuiControl,1:+gSubReddit,SysListView321
 }
 SetLast(alert:=1){
-	info:=Gui(1),Default("SysListView321"),LV_GetText(sub,LV_GetNext()),node:=settings.ssn("//" sub),cxml.Reset()
+	info:=Gui(1),Default("SysListView321"),LV_GetText(sub,LV_GetNext()),node:=settings.ssn("//date/sub[@name='" sub "']"),cxml.Reset()
 	if(node){
 		last:=settings.sn("//date/*[@last]")
 		while,ll:=last.item[A_Index-1]
 			ll.RemoveAttribute("last")
 		node.SetAttribute("last",1)
 		if(alert)
-			m(node.nodename " Is now the current Sub-Reddit","time:1")
+			m(node.nodename " Is now the current Sub-Reddit","time:.5")
 	}
 }
 Page_Up(){
@@ -572,8 +580,8 @@ AddSubReddit(){
 		return
 	if(RegExMatch(new,"\/|\\"))
 		return m("Please read the instructions and try again")
-	if(!settings.ssn("//" new))
-		settings.under(settings.add("date"),new,{time:0}),PopulateSubReddits()
+	if(!settings.ssn("//date/sub[@name='" new "']"))
+		settings.under(settings.add("date"),"sub",{name:new,time:0}),PopulateSubReddits()
 }
 Browse(){
 	browse:=settings.ssn("//browse").text?0:1
@@ -583,7 +591,7 @@ Delete(){
 	ControlGetFocus,Focus,% v.MainID
 	if(Focus="SysListView321"){
 		LV_GetText(sub,LV_GetNext())
-		node:=settings.ssn("//date/" sub)
+		node:=settings.ssn("//date/sub[@name='" sub "']")
 		if(m("Are you sure? Can not be undone","btn:ync")="Yes")
 			node.ParentNode.RemoveChild(node),PopulateSubReddits()
 }}
@@ -640,7 +648,7 @@ Class CurrentXML{
 			this.GetNextSub:=1,v.LastNewImage:=0,this.node.SetAttribute("time",this.LatestDate),this.LatestDate:=0,PopulateSubReddits(),SubReddit(1)
 	}GetSub(){
 		if(LV_GetNext())
-			LV_GetText(sub,LV_GetNext()),this.sub:=sub,this.node:=settings.ssn("//date/" sub),this.LastTime:=settings.ssn("//date/" sub "/@time").text
+			LV_GetText(sub,LV_GetNext()),this.sub:=sub,this.node:=settings.ssn("//date/sub[@name='" sub "']"),this.LastTime:=settings.ssn("//date/sub[@name='" sub "']/@time").text
 		else
 			return m("Select A Sub-Reddit First")
 	}SetTitle(txt:=""){
